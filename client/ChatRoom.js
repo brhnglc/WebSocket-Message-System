@@ -4,38 +4,35 @@ import SockJS from 'sockjs-client';
 
 var stompClient =null;
 const ChatRoom = () => {
-	//değiştiginde render edilen değişkenler useState bildigin deger tutmak için 
-    const [privateChats, setPrivateChats] = useState(new Map());      //map key-value yapısı	
-    const [publicChats, setPublicChats] = useState([]); //array
-    const [tab,setTab] =useState("CHATROOM"); //hangi sekmede oldugunu 
+    const [privateChats, setPrivateChats] = useState(new Map());      
+    const [publicChats, setPublicChats] = useState([]); 
+    const [tab,setTab] =useState("CHATROOM"); 
     const [userData, setUserData] = useState({
         username: '',
         receivername: '',
         connected: false,
         message: ''
       });
-	  /*
-	  Bu state'ler, bir bileşenin içindeki değişken değerlerini tutar ve bu değerlerin güncellenmesi durumunda bileşenin yeniden render edilmesini sağlar. 
-	  */
+	 
 	  
 	  
 	  
 	  
     useEffect(() => {
       console.log(userData);
-    }, [userData]); //userdata değiştikçe bu arrayin içinde oldugu için ona bakıyoruz usereffect çalışır
+    }, [userData]); 
 
     const connect =()=>{ //
-        let Sock = new SockJS('http://localhost:8080/ws'); //websocket baglantısı kurulur
-        stompClient = over(Sock); // sockjs üzerinden stomp client oluşturulur
-        stompClient.connect({},onConnected, onError); // baglantı aranır çalışırsa onconnceted çalışmassa onerror çalıştırlır
+        let Sock = new SockJS('http://localhost:8080/ws'); 
+        stompClient = over(Sock); 
+        stompClient.connect({},onConnected, onError); 
     }
 
     const onConnected = () => {
-        setUserData({...userData,"connected": true}); // kullanıcı durumunu günceller ve connceted true olarak değiştirir
-        stompClient.subscribe('/chatroom/public', onMessageReceived); // chatroom/public kanalına abone ol gelen mesajları onmessage recevied ile işle
-        stompClient.subscribe('/user/'+userData.username+'/private', onPrivateMessage); // kendine gelen mesajları onprivatemessage ile işle 
-        userJoin(); //kullanıcı sohbete katıldı bilgisini sunucuya ilet
+        setUserData({...userData,"connected": true}); 
+        stompClient.subscribe('/chatroom/public', onMessageReceived);
+        stompClient.subscribe('/user/'+userData.username+'/private', onPrivateMessage); 
+        userJoin();
     }
 
     const userJoin=()=>{
@@ -43,32 +40,32 @@ const ChatRoom = () => {
             senderName: userData.username,
             status:"JOIN"
           };
-          stompClient.send("/app/message", {}, JSON.stringify(chatMessage)); //{} boş başlık ile app message kanalına json formatına çevrilmiş sender name ve status bilgisi paylaşılır
+          stompClient.send("/app/message", {}, JSON.stringify(chatMessage)); 
     }
 
     const onMessageReceived = (payload)=>{
-        var payloadData = JSON.parse(payload.body); //json dosyası çözümlenir
-        switch(payloadData.status){ //gelene mesajın durumuna göre join mi yoksa messagemı durumuna göre incelenir
+        var payloadData = JSON.parse(payload.body); 
+        switch(payloadData.status){ 
             case "JOIN": 
                 if(!privateChats.get(payloadData.senderName)){ 
-                    privateChats.set(payloadData.senderName,[]); //Kullanıcının adını özel sohbet listesine ekler ve bu kullanıcıya ait özel sohbet listesini boş bir diziyle başlatır.
+                    privateChats.set(payloadData.senderName,[]); 
                     setPrivateChats(new Map(privateChats));
                 }
                 break;
             case "MESSAGE":
-                publicChats.push(payloadData); // genel sohbette pushlanıyor
-                setPublicChats([...publicChats]); //spred operetörü başka bir diziye kopyalarken daha güvenli yapıyor
+                publicChats.push(payloadData); 
+                setPublicChats([...publicChats]);
                 break;
         }
     }
     
     const onPrivateMessage = (payload)=>{
         console.log(payload);
-        var payloadData = JSON.parse(payload.body); // parse edilen payload okunabilir js nesnesine dönüştürülür
-        if(privateChats.get(payloadData.senderName)){// eger eskiden konuşulduysa
+        var payloadData = JSON.parse(payload.body); 
+        if(privateChats.get(payloadData.senderName)){
             privateChats.get(payloadData.senderName).push(payloadData);
             setPrivateChats(new Map(privateChats));
-        }else{//konuşma öncesi yoksa
+        }else{
             let list =[];
             list.push(payloadData);
             privateChats.set(payloadData.senderName,list);
@@ -116,12 +113,12 @@ const ChatRoom = () => {
         }
     }
 
-    const handleUsername=(event)=>{ // userdatayı klavyeden girilen yazı ile değiştirilir
+    const handleUsername=(event)=>{ 
         const {value}=event.target;
         setUserData({...userData,"username": value});
     }
 
-    const registerUser=()=>{ // kullancı ilk ismini girince çalışan fonksiyon
+    const registerUser=()=>{
         connect();
     }
     return (
